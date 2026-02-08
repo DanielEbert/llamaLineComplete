@@ -22,21 +22,21 @@ export class ContextManager {
     public handleCursorChange(editor: vscode.TextDocument, pos: vscode.Position) {
         const dist = Math.abs(pos.line - this.lastLinePick);
         if (dist > 32) {
-            // Expand prefix/suffix scope for cursor moves (Ring Scope logic)
-            this.extractChunk(editor, Math.max(0, pos.line - 100), 50); // Previous context
-            this.extractChunk(editor, pos.line + 50, 50); // Suffix context
+            this.extractChunk(editor, pos.line, this.config.ringChunkSize);
             this.lastLinePick = pos.line;
         }
     }
 
-    public extractChunk(doc: vscode.TextDocument, centerLine: number, size: number) {
+    public extractChunk(doc: vscode.TextDocument, centerLine: number, size: number, allowDirty = false) {
         // Dirty Check: Don't read from unsaved buffers to avoid stale/broken context
-        if (doc.isDirty) return;
+        // UNLESS allowDirty is true (for the current file being edited)
+        if (!allowDirty && doc.isDirty) return;
 
         if (this.config.ringNChunks <= 0) return;
 
-        const start = Math.max(0, centerLine - size / 2);
-        const end = Math.min(doc.lineCount, centerLine + size / 2);
+        const start = Math.max(0, centerLine - Math.floor(size / 2));
+        const end = Math.min(doc.lineCount, centerLine + Math.ceil(size / 2));
+        if (end <= start) return;
 
         const range = new vscode.Range(start, 0, end, 0);
         const text = doc.getText(range);
@@ -48,6 +48,7 @@ export class ContextManager {
     }
 
     private add(filename: string, text: string, lines: string[]) {
+        console.log(`Adding ${filename}, ${lines}, ${text}`)
         // Check duplication using Jaccard on arrays
         if (this.chunks.some(c => Utils.jaccardSimilarity(c.lines, lines) > 0.9) ||
             this.queued.some(c => Utils.jaccardSimilarity(c.lines, lines) > 0.9)) {

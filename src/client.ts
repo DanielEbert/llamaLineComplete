@@ -6,6 +6,12 @@ export class LlamaClient {
 
     private async post(body: any, signal?: AbortSignal) {
         try {
+            // Compose abort: user cancellation OR timeout
+            const timeout = AbortSignal.timeout(5000);
+            const combined = signal
+                ? AbortSignal.any([signal, timeout])
+                : timeout;
+
             const res = await fetch(`${this.config.endpoint}/infill`, {
                 method: 'POST',
                 headers: {
@@ -13,11 +19,12 @@ export class LlamaClient {
                     'Authorization': `Bearer ${this.config.apiKey}`
                 },
                 body: JSON.stringify(body),
-                signal
+                signal: combined
             });
             if (!res.ok) throw new Error(`Status: ${res.status}`);
             return await res.json();
-        } catch (e) {
+        } catch (e: any) {
+            if (e.name === 'AbortError' || e.name === 'TimeoutError') return null;
             // Suppress connection errors for cleaner logs
             return null;
         }

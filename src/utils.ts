@@ -1,13 +1,30 @@
 import * as vscode from 'vscode';
-import * as crypto from 'crypto';
 
 export class Utils {
     static delay(ms: number) {
         return new Promise<void>(resolve => setTimeout(resolve, ms));
     }
 
+    // Fast FNV-1a hash - much faster than SHA-256 for cache keys
+    static fastHash(data: string): string {
+        // FNV-1a 52-bit hash - much faster than SHA-256, fine for cache keys
+        let hash = 0x811c9dc5;
+        for (let i = 0; i < data.length; i++) {
+            hash ^= data.charCodeAt(i);
+            hash = (hash * 0x01000193) >>> 0;
+        }
+        // Use two passes for fewer collisions
+        let hash2 = 0x811c9dc5;
+        for (let i = data.length - 1; i >= 0; i--) {
+            hash2 ^= data.charCodeAt(i);
+            hash2 = (hash2 * 0x01000193) >>> 0;
+        }
+        return `${hash.toString(36)}-${hash2.toString(36)}`;
+    }
+
+    // Deprecated: Use fastHash instead
     static getHash(data: string): string {
-        return crypto.createHash('sha256').update(data).digest('hex');
+        return this.fastHash(data);
     }
 
     // Compare arrays of strings, not raw text strings
@@ -67,15 +84,23 @@ export class Utils {
         // Cursor at end of file logic
         if (pos.line === doc.lineCount - 1) return false;
 
-        // Repeating next lines?
-        if (suggestionLines.length > 1 &&
-            (suggestionLines[0].trim() === "" || suggestionLines[0].trim() === suffix.trim()) &&
-            suggestionLines.slice(1).every((val, idx) => val === doc.lineAt(pos.line + 1 + idx).text)) {
-            return true;
-        }
-
         // Exact Suffix Match
         if (suggestionLines.length === 1 && suggestionLines[0] === suffix) return true;
+
+        // Repeating next lines?
+        if (suggestionLines.length > 1) {
+            const firstIsEmpty = suggestionLines[0].trim() === "" || suggestionLines[0].trim() === suffix.trim();
+            if (firstIsEmpty) {
+                const linesAvailable = doc.lineCount - (pos.line + 1);
+                const linesToCheck = Math.min(suggestionLines.length - 1, linesAvailable);
+                if (linesToCheck > 0 &&
+                    suggestionLines.slice(1, 1 + linesToCheck).every(
+                        (val, idx) => pos.line + 1 + idx < doc.lineCount && val === doc.lineAt(pos.line + 1 + idx).text
+                    )) {
+                    return true;
+                }
+            }
+        }
 
         // Lookahead matching
         let nextLineIdx = pos.line + 1;
@@ -85,9 +110,15 @@ export class Utils {
             const nextLine = doc.lineAt(nextLineIdx).text;
             if ((prefix + suggestionLines[0]) === nextLine) {
                 if (suggestionLines.length === 1) return true;
-                if (suggestionLines.length > 2 &&
-                    suggestionLines.slice(1).every((val, idx) => val === doc.lineAt(nextLineIdx + 1 + idx).text)) {
-                    return true;
+                if (suggestionLines.length > 2) {
+                    const available = doc.lineCount - (nextLineIdx + 1);
+                    const toCheck = Math.min(suggestionLines.length - 1, available);
+                    if (toCheck > 0 &&
+                        suggestionLines.slice(1, 1 + toCheck).every(
+                            (val, idx) => nextLineIdx + 1 + idx < doc.lineCount && val === doc.lineAt(nextLineIdx + 1 + idx).text
+                        )) {
+                        return true;
+                    }
                 }
             }
         }
@@ -97,10 +128,30 @@ export class Utils {
 
     static updateSuggestion(suggestionLines: string[], lineSuffix: string): string {
         const suffix = lineSuffix.trim();
-        if (suffix !== "") {
-            if (suggestionLines[0].endsWith(suffix)) return suggestionLines[0].slice(0, -suffix.length);
-            if (suggestionLines.length > 1) return suggestionLines[0];
+
+        if (suffix === "") {
+            return suggestionLines.join('\n');
         }
+
+        // Single line: trim overlapping suffix
+        if (suggestionLines.length === 1) {
+            const line = suggestionLines[0];
+            // Find where suffix appears at the end of the suggestion
+            const idx = line.lastIndexOf(suffix);
+            if (idx !== -1 && idx + suffix.length === line.length) {
+                return line.slice(0, idx);
+            }
+            return line;
+        }
+
+        // Multi-line: the first line shares space with lineSuffix
+        // Only return the first line's content before the suffix starts
+        const firstLine = suggestionLines[0];
+        const suffixIdx = firstLine.lastIndexOf(suffix);
+        if (suffixIdx !== -1 && suffixIdx + suffix.length === firstLine.length) {
+            suggestionLines[0] = firstLine.slice(0, suffixIdx);
+        }
+
         return suggestionLines.join('\n');
     }
 }
