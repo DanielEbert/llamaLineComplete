@@ -10,7 +10,7 @@ export class Utils {
         return crypto.createHash('sha256').update(data).digest('hex');
     }
 
-    // Optimization: Compare arrays of strings, not raw text strings
+    // Compare arrays of strings, not raw text strings
     static jaccardSimilarity(lines0: string[], lines1: string[]): number {
         if (lines0.length === 0 && lines1.length === 0) return 1;
         const setA = new Set(lines0);
@@ -45,14 +45,13 @@ export class Utils {
         }).join('\n');
     }
 
-    // Helper to strip empty end lines
     static stripTrailingNewLines(lines: string[]): void {
         while (lines.length > 0 && lines[lines.length - 1].trim() === "") {
             lines.pop();
         }
     }
 
-    // Aggressive filtering to stop hallucinations/repetitions
+    // filtering to stop hallucinations/repetitions
     static shouldDiscardSuggestion(
         suggestionLines: string[],
         doc: vscode.TextDocument,
@@ -62,23 +61,23 @@ export class Utils {
     ): boolean {
         if (suggestionLines.length === 0) return true;
 
-        // 1. Empty single line
+        // Empty single line
         if (suggestionLines.length === 1 && suggestionLines[0].trim() === "") return true;
 
-        // 2. Cursor at end of file logic
+        // Cursor at end of file logic
         if (pos.line === doc.lineCount - 1) return false;
 
-        // 3. Repeating next lines?
+        // Repeating next lines?
         if (suggestionLines.length > 1 &&
             (suggestionLines[0].trim() === "" || suggestionLines[0].trim() === suffix.trim()) &&
             suggestionLines.slice(1).every((val, idx) => val === doc.lineAt(pos.line + 1 + idx).text)) {
             return true;
         }
 
-        // 4. Exact Suffix Match
+        // Exact Suffix Match
         if (suggestionLines.length === 1 && suggestionLines[0] === suffix) return true;
 
-        // 5. Lookahead matching
+        // Lookahead matching
         let nextLineIdx = pos.line + 1;
         while (nextLineIdx < doc.lineCount && doc.lineAt(nextLineIdx).text.trim() === "") nextLineIdx++;
 

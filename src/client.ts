@@ -16,7 +16,6 @@ export class LlamaClient {
                 signal
             });
             if (!res.ok) throw new Error(`Status: ${res.status}`);
-            console.log(res)
             return await res.json();
         } catch (e) {
             // Suppress connection errors for cleaner logs

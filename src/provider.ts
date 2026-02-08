@@ -26,7 +26,6 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
         token: vscode.CancellationToken
     ): Promise<vscode.InlineCompletionItem[] | undefined> {
 
-        // 1. Completion Trigger Logic (Noise Reduction)
         const lineText = doc.lineAt(pos.line).text;
         const lineSuffix = lineText.substring(pos.character);
 
@@ -36,18 +35,18 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
             return undefined;
         }
 
-        // 2. Debounce Logic
+        // Debounce
         while (this.isBusy) {
             await Utils.delay(this.config.delayBeforeRequest);
             if (token.isCancellationRequested) return undefined;
         }
 
         this.isBusy = true;
-        this.ctxManager.lastComplStartTime = Date.now(); // Throttle ring buffer
+        this.ctxManager.lastComplStartTime = Date.now();  // Throttle ring buffer
         this.statusBar.showThinking();
 
         try {
-            // 3. Construct Context
+            // Construct Context
             const prefixLines = Utils.getPrefixLines(doc, pos, this.config.nPrefix);
             const suffixLines = Utils.getSuffixLines(doc, pos, this.config.nSuffix);
 
@@ -63,7 +62,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
                 spacesToRemove = prompt.length;
             }
 
-            // 4. Fuzzy LRU Cache Lookup
+            // Fuzzy LRU Cache Lookup
             // Iterate backwards: prompt, promp, prom... to find partial matches
             let cachedContent: string | undefined;
 
@@ -90,7 +89,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
                 finalContent = cachedContent;
                 this.statusBar.showCached();
             } else {
-                // 5. Network Request
+                // Network Request
                 const nIndent = lineText.length - lineText.trimStart().length;
                 const abortController = new AbortController();
                 token.onCancellationRequested(() => abortController.abort());
@@ -107,9 +106,9 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
 
             if (!finalContent) return undefined;
 
-            // 6. Quality Filtering
+            // Quality Filtering
             const lines = finalContent.split('\n');
-            Utils.stripTrailingNewLines(lines); // Strip empty end lines
+            Utils.stripTrailingNewLines(lines);
 
             if (Utils.shouldDiscardSuggestion(lines, doc, pos, prompt, lineSuffix)) {
                 return undefined;
@@ -122,7 +121,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
             const fullHash = Utils.getHash(`${inputPrefix}|${inputSuffix}|${prompt}`);
             this.cache.put(fullHash, [cleanContent]);
 
-            // 7. Speculative Execution (The Magic Sauce)
+            // Speculative Execution
             // Async: Assume user accepts this code. Generate the *next* code now.
             setTimeout(async () => {
                 if (!token.isCancellationRequested) {

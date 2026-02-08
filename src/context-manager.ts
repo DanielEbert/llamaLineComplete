@@ -4,7 +4,7 @@ import { Utils } from './utils';
 
 export interface Chunk {
     text: string;
-    lines: string[]; // Optimization: Store pre-split lines
+    lines: string[];
     filename: string;
     time: number;
 }
@@ -38,7 +38,6 @@ export class ContextManager {
         const start = Math.max(0, centerLine - size / 2);
         const end = Math.min(doc.lineCount, centerLine + size / 2);
 
-        // Use range for speed
         const range = new vscode.Range(start, 0, end, 0);
         const text = doc.getText(range);
 
@@ -49,7 +48,7 @@ export class ContextManager {
     }
 
     private add(filename: string, text: string, lines: string[]) {
-        // Check duplication using optimized Jaccard on arrays
+        // Check duplication using Jaccard on arrays
         if (this.chunks.some(c => Utils.jaccardSimilarity(c.lines, lines) > 0.9) ||
             this.queued.some(c => Utils.jaccardSimilarity(c.lines, lines) > 0.9)) {
             return;

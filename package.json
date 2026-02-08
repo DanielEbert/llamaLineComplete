@@ -41,12 +41,12 @@
         },
         "llama-lite.n_predict": {
           "type": "number",
-          "default": 128,
+          "default": 64,
           "description": "Maximum number of tokens to predict"
         },
         "llama-lite.ring_n_chunks": {
           "type": "number",
-          "default": 16,
+          "default": 2,
           "description": "Number of chunks to keep in the ring buffer context"
         },
         "llama-lite.max_line_suffix": {

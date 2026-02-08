@@ -11,7 +11,7 @@ export class Configuration {
     get ringChunkSize() { return 64; }
     get ringUpdateMs() { return 1000; }
 
-    // New settings for filtering and throttling
+    // for filtering and throttling
     get maxLineSuffix() { return this.config.get<number>("max_line_suffix", 8); }
     get delayBeforeRequest() { return 150; } // Debounce ms
     get ringUpdateMinTimeLastCompl() { return 3000; } // Throttle context updates if typing
