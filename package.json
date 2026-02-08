@@ -16,6 +16,20 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "llama-lite.triggerCompletion",
+        "title": "Trigger Inline Completion",
+        "category": "Llama Lite"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "llama-lite.triggerCompletion",
+        "key": "shift+tab",
+        "when": "editorTextFocus && !editorReadonly"
+      }
+    ],
     "configuration": {
       "title": "Llama Lite",
       "properties": {

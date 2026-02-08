@@ -51,7 +51,7 @@ export class LlamaClient {
             cache_prompt: true, // Key to KV Cache reuse
             stream: false,
             t_max_prompt_ms: 500,
-            t_max_predict_ms: nPredict === 0 ? 1 : 2500
+            t_max_predict_ms: nPredict === 0 ? 1 : 2500,
         };
 
         const data: any = await this.post(payload, signal);

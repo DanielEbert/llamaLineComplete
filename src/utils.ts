@@ -154,4 +154,28 @@ export class Utils {
 
         return suggestionLines.join('\n');
     }
+
+    static truncateToSingleLine(content: string): string {
+        // If content starts with a newline, we're completing "the next line"
+        // Allow one newline-delimited line after the initial newline
+        if (content.startsWith('\n') || content.startsWith('\r\n')) {
+            const newlinePrefix = content.startsWith('\r\n') ? '\r\n' : '\n';
+            const rest = content.slice(newlinePrefix.length);
+            // Find the next newline in the rest
+            const nextNewline = rest.indexOf('\n');
+            if (nextNewline === -1) {
+                return content; // No further newline, return as-is
+            }
+            // Include up through (and including) the newline terminator
+            return newlinePrefix + rest.slice(0, nextNewline + 1);
+        }
+
+        // Content doesn't start with newline — we're completing the current line
+        const newlineIdx = content.indexOf('\n');
+        if (newlineIdx === -1) {
+            return content; // Single line, return as-is
+        }
+        // Keep everything up to and including the newline (but nothing after)
+        return content.slice(0, newlineIdx + 1);
+    }
 }

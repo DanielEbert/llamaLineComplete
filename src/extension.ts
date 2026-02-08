@@ -16,6 +16,13 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.languages.registerInlineCompletionItemProvider({ pattern: '**' }, provider)
 	);
 
+	// Command: Trigger Inline Completion
+	context.subscriptions.push(
+		vscode.commands.registerCommand('llama-lite.triggerCompletion', async () => {
+			await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger');
+		})
+	);
+
 	// Trigger: Save
 	context.subscriptions.push(
 		vscode.workspace.onDidSaveTextDocument(doc => {

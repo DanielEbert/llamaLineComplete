@@ -26,7 +26,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
         ctx: vscode.InlineCompletionContext,
         token: vscode.CancellationToken
     ): Promise<vscode.InlineCompletionItem[] | undefined> {
-
+        console.log('triggered completion request')
         // Cancel any previous in-flight request immediately
         if (this.activeAbortController) {
             this.activeAbortController.abort();
@@ -85,7 +85,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
                 return undefined;
             }
 
-            const cleanContent = Utils.updateSuggestion(lines, lineSuffix);
+            const cleanContent = Utils.truncateToSingleLine(Utils.updateSuggestion(lines, lineSuffix));
             const displayContent = Utils.removeLeadingSpaces(cleanContent, spacesToRemove);
             if (!displayContent || displayContent.trim() === '') return undefined;
 
@@ -132,7 +132,7 @@ export class CompletionProvider implements vscode.InlineCompletionItemProvider {
                 return undefined;
             }
 
-            const cleanContent = Utils.updateSuggestion(lines, lineSuffix);
+            const cleanContent = Utils.truncateToSingleLine(Utils.updateSuggestion(lines, lineSuffix));
             const displayContent = Utils.removeLeadingSpaces(cleanContent, spacesToRemove);
             if (!displayContent || displayContent.trim() === '') return undefined;
 
